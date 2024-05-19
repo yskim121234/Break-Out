@@ -9,7 +9,7 @@ class Ball(pygame.Rect):
         # 색
         self.color = WHITE
         # 기본 속도
-        self.Basic_Speed = 5
+        self.Base_Speed = 5
         # 축 속도
         self.Speed_X = 0
         self.Speed_Y = 0
@@ -27,13 +27,13 @@ class Ball(pygame.Rect):
         if self.Is_Ready:
             # 스페이스바가 눌렸을 경우
             if keys[pygame.K_SPACE] == True:
-                self.Speed_Y = -5
+                self.Speed_Y = -self.Base_Speed * numpy.cos(45)
 
                 # ranint의 범위는 0~1 => False or True
                 if numpy.random.randint(0,2):
-                    self.Speed_X = 5
+                    self.Speed_X = self.Base_Speed * numpy.sin(45)
                 else:
-                    self.Speed_X = -5
+                    self.Speed_X = -self.Base_Speed * numpy.sin(45)
                 #발사 준비 상태 해제
                 self.Is_Ready = False
 

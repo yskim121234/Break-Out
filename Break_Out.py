@@ -3,6 +3,7 @@ from Utillity.Colors import *
 from Object.Ball import *
 from Object.Pad import Pad
 from Object.Brick import Brick
+import numpy as np
 
 def Dead():
     if len(health) <= 0:
@@ -67,6 +68,9 @@ while running:
                 # 그 키가 왼쪽 컨트롤일 경우
                 if event.key == pg.K_LCTRL:
                     debug = not debug
+    # 입력한 키들을 리스트로 저장
+    keys = pg.key.get_pressed()
+
     # 화면을 검은색으로 채운다.
     display.fill(BLACK)
 
@@ -81,6 +85,10 @@ while running:
 
         # text 출력
         display.blit(text, (x, y))
+
+        if keys[pg.K_SPACE]:
+            health = [pg.Rect(5+2.5*i+i*10, 30, 10, 10) for i in range(3)]
+            score = 0
     
     # 체력이 0보다 큰 경우
     else:
@@ -97,31 +105,32 @@ while running:
         if clear == True:
             # 다음 스테이지
             stage += 1
+            ball.Base_Speed = ball.Base_Speed * (1+ stage/10)
             # 벽돌 배치
             for i in range(4+stage):
                 for j in range(4+stage):
                     bricks.append(Brick(i*(display.get_width()/(4+stage)), j*((display.get_height()/4+stage)/4), display.get_width()/(4+stage), (display.get_height()/4+stage)/4))
             # 변수 초기화
             clear = False
-
-        # 입력한 키들을 리스트로 저장
-        keys = pg.key.get_pressed()
         
         # 공이 패드보다 위에 있을 경우
         if ball.centery <= pad.y:
             #충돌했을 경우
             if ball.colliderect(pad) == True:
                 # 공이 충돌한 위치에 따라 튕겨지는 방향이 정해지는 방식
-                #if ball.centerx < pad.centerx:
-                    #ball.Speed_X = -ball.Basic_Speed * (1+((stage-1)/2))
-                #elif ball.centerx > pad.centerx:
-                    #ball.Speed_X = ball.Basic_Speed * (1+((stage-1)/2))
-                #else:
-                    #ball.Speed_X = -ball.Speed_X * (1+((stage-1)/2))
-                #ball.Speed_Y = -ball.Basic_Speed * (1+((stage-1)/2))
+                # 공과 패드 중앙 사이의 거리
+                distance_from_center = ball.centerx - pad.centerx
+                # 패드 절반 너비
+                pad_width_half = pad.w/2
+                # 패드 중앙과의 거리 퍼센트 => 반사각 비율 (100% = 80도)
+                reflection_ratio = distance_from_center/pad_width_half
+                # 반사각
+                reflection_angle = np.radians(15+ reflection_ratio * (80 - 15))
 
+                ball.Speed_X = ball.Base_Speed * np.sin(reflection_angle)
+                ball.Speed_Y = -ball.Base_Speed * np.cos(reflection_angle)
                 # 단순히 튕겨지기만 하는 방식
-                ball.Speed_Y = -ball.Basic_Speed * (1+((stage-1)/2))
+                #ball.Speed_Y = -ball.Base_Speed
 
         # 모든 벽돌에 대해 반복
         for brick in bricks:
