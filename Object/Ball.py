@@ -4,7 +4,7 @@ import numpy
 
 class Ball(pygame.Rect):
     def __init__(self, size, x=0, y=0):
-        #부모 생성에 호출
+        #부모 생성자 호출
         super().__init__(x,y,size,size)
         # 색
         self.color = WHITE
@@ -74,6 +74,7 @@ class Ball(pygame.Rect):
         self.Speed_Y = 0
         self.x = pad.centerx-self.w/2
         self.y = pad.y-self.h
+        
     # 그리기
     def Draw(self, surface):
         pygame.draw.circle(surface, self.color, self.center, self.width/2)

@@ -85,6 +85,7 @@ while running:
 
         # text 출력
         display.blit(text, (x, y))
+        bricks.clear()
 
         if keys[pg.K_SPACE]:
             health = [pg.Rect(5+2.5*i+i*10, 30, 10, 10) for i in range(3)]
