@@ -90,6 +90,7 @@ while running:
         if keys[pg.K_SPACE]:
             health = [pg.Rect(5+2.5*i+i*10, 30, 10, 10) for i in range(3)]
             score = 0
+            stage = 0
     
     # 체력이 0보다 큰 경우
     else:
