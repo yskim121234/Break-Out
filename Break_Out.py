@@ -24,7 +24,7 @@ running = True
 clock = pg.time.Clock()
 
 # 패드 생성 및 초기화
-pad = Pad(0, 765, 150, 25)
+pad = Pad(0, 765, 200, 25)
 pad.Max_Range_X = display.get_width()
 
 # 공 생성 및 초기화
@@ -91,6 +91,7 @@ while running:
             health = [pg.Rect(5+2.5*i+i*10, 30, 10, 10) for i in range(3)]
             score = 0
             stage = 0
+            ball.Base_Speed = 5
     
     # 체력이 0보다 큰 경우
     else:
