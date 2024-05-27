@@ -166,6 +166,8 @@ while running:
             brick.Draw(display)
         for h in health:
             pg.draw.rect(display, WHITE, h)
+            
+        
         
         if debug == True:
             pg.draw.line(display, RED, ball.center, (ball.centerx ,pad.y))
