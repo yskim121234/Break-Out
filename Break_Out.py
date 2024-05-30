@@ -3,7 +3,10 @@ from Utillity.Colors import *
 from Object.Ball import *
 from Object.Pad import Pad
 from Object.Brick import Brick
+from Object.Nickname_Entry import Nickname_input
+from Object.Difficulty_Option import Diff_Option
 import numpy as np
+import sqlite3
 
 def Dead():
     if len(health) <= 0:
@@ -11,6 +14,23 @@ def Dead():
     else:
         health.pop()
 
+def DB_Update(name, score):
+    db = sqlite3.connect('./Recode.db')
+    cur = db.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS recode(name TEXT, score INT)""")
+    cur.execute("""INSERT INTO recode (name, score) VALUES (?, ?)""", (name, str(score)))
+    db.commit()
+    db.close()
+
+def DB_Load():
+    db = sqlite3.connect('./Recode.db')
+    cur = db.cursor()
+    cur.execute("""SELECT * FROM recode""")
+
+    for tuple in cur:
+        recode[tuple[1]] = tuple[0]
+    db.close()
+    return recode
 #초기화
 pg.init()
 pg.display.init()
@@ -38,7 +58,9 @@ bricks = []
 # 스코어 보드 설정 및 변수 초기화
 scoreboard = pg.font.SysFont(None, 30)
 score = 0
-
+recode = {}
+# 시작
+start = True
 # 체력 리스트 및 아이콘 생성
 health = [pg.Rect(5+2.5*i+i*10, 30, 10, 10) for i in range(3)]
 
@@ -49,52 +71,65 @@ clear = True
 # 디버깅 모드 변수
 debug = False
 
+# 닉네임 입력
+nickname_input = Nickname_input()
+
+# 난이도 선택
+difficulty_option = Diff_Option(display.get_width()/2,display.get_height()/2)
+
+######
+DB_Once = True
 #게임 루프
 while running:
     # 초당 100번의 Tick
     clock.tick(100)
 
+    mouseX, mouseY = pg.mouse.get_pos()
     # 이벤트 루프
     for event in pg.event.get():
         # 윈도우의 X 버튼을 눌렀을 경우
         if event.type == pg.QUIT:
             running = False
         else:
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if difficulty_option.Easy_Rect.Is_Hoverd(mouseX, mouseY) and pg.mouse.get_pressed()[0] == 1:
+                    ball.Base_Speed = 5
+                    difficulty_option.Easy_Rect.Clicked = True
+                    difficulty_option.Hard_Rect.Clicked = False
+
+
+                if difficulty_option.Hard_Rect.Is_Hoverd(mouseX, mouseY) and pg.mouse.get_pressed()[0] == 1:
+                    ball.Base_Speed = 10
+                    difficulty_option.Hard_Rect.Clicked = True
+                    difficulty_option.Easy_Rect.Clicked = False
+
+                    
+
             # 키가 눌렸을 경우
             if event.type == pg.KEYDOWN:
                 # 그 키가 ESC일 경우
                 if event.key == pg.K_ESCAPE:
                     running = False
-                # 그 키가 왼쪽 컨트롤일 경우
-                if event.key == pg.K_LCTRL:
-                    debug = not debug
+                if event.key == pg.K_BACKSPACE:
+                    nickname_input.text = nickname_input.text[:-1]
+                elif len(nickname_input.text) < 8 and event.key != pg.K_RETURN and event.key != pg.K_SPACE and start == True:
+                    nickname_input.text += event.unicode
+                if event.key == pg.K_RETURN:
+                    start = False
+                
+                
     # 입력한 키들을 리스트로 저장
     keys = pg.key.get_pressed()
 
+    events = pg.event.get()
     # 화면을 검은색으로 채운다.
     display.fill(BLACK)
 
-    # 만약 체력이 0보다 작거나 같은 경우
-    if len(health) <= 0:
-        # text 설정
-        text = scoreboard.render('Your Score is : ' + str(score), True, WHITE, None)
-
-        # 중앙 좌표 설정
-        x = (display.get_width()-text.get_width())/2
-        y = (display.get_height()-text.get_height())/2
-
-        # text 출력
-        display.blit(text, (x, y))
-        bricks.clear()
-
-        if keys[pg.K_SPACE]:
-            health = [pg.Rect(5+2.5*i+i*10, 30, 10, 10) for i in range(3)]
-            score = 0
-            stage = 0
-            ball.Base_Speed = 5
-    
+    if start == True:
+        nickname_input.Render(display, (display.get_width()/2) - 75, (display.get_height()/2) - 75)
+        difficulty_option.Draw(display)
     # 체력이 0보다 큰 경우
-    else:
+    elif len(health) > 0:
         # 벽돌 갯수가 0보다 큰 경우
         if len(bricks) <= 0:
             clear = True
@@ -128,7 +163,10 @@ while running:
                 # 패드 중앙과의 거리 퍼센트 => 반사각 비율 (100% = 80도)
                 reflection_ratio = distance_from_center/pad_width_half
                 # 반사각
-                reflection_angle = np.radians(15+ reflection_ratio * (80 - 15))
+                if ball.centerx < pad.centerx:
+                    reflection_angle = np.radians(-15+ reflection_ratio * (80 - 15))
+                elif ball.centerx > pad.centerx:
+                    reflection_angle = np.radians(15+ reflection_ratio * (80 - 15))
 
                 ball.Speed_X = ball.Base_Speed * np.sin(reflection_angle)
                 ball.Speed_Y = -ball.Base_Speed * np.cos(reflection_angle)
@@ -180,7 +218,25 @@ while running:
     
         pad.Draw(display)
         ball.Draw(display)
+    else:     # 만약 체력이 0보다 작거나 같은 경우
+        if DB_Once == True:
+            DB_Update(nickname_input.text, score)
+            recode = DB_Load()
+            DB_Once = False
+            text = [scoreboard.render(recode[each_recode] + ' : ' + str(each_recode), True, WHITE, None) for each_recode in sorted(recode.keys(), reverse= True)]
+        # 중앙 좌표 설정
+        x = (display.get_width()/2) - 100
+        y = (display.get_height()/2) - 150
+
+        # text 출력
+        for i in range(6):
+            if i >= len(text):
+                break
+            display.blit(text[i], (x, y + (i*50)))
+        bricks.clear()
     
+   
     # 화면 업데이트
+    pg.display.update()
     pg.display.flip()
         
