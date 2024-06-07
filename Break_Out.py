@@ -5,6 +5,7 @@ from Object.Pad import Pad
 from Object.Brick import Brick
 from Object.Nickname_Entry import Nickname_input
 from Object.Difficulty_Option import Diff_Option
+import tkinter.messagebox as mb
 import numpy as np
 import sqlite3
 
@@ -14,7 +15,7 @@ def Dead():
     else:
         health.pop()
 
-def DB_Update(name, score):
+def Recode_Update(name, score):
     db = sqlite3.connect('./Recode.db')
     cur = db.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS recode(name TEXT, score INT)""")
@@ -22,15 +23,21 @@ def DB_Update(name, score):
     db.commit()
     db.close()
 
-def DB_Load():
-    db = sqlite3.connect('./Recode.db')
-    cur = db.cursor()
-    cur.execute("""SELECT * FROM recode""")
+def Recode_Load():
+    try:
+        db = sqlite3.connect('./Recode.db')
+        cur = db.cursor()
+        cur.execute("""SELECT * FROM recode""")
 
-    for tuple in cur:
-        recode[tuple[1]] = tuple[0]
-    db.close()
-    return recode
+        for tuple in cur:
+            recode[tuple[1]] = tuple[0]
+        db.close()
+    except Exception as ex:
+        mb.showerror('DB Error', str(ex)+ ' error')
+
+        recode['Error'] = 'Error'
+    finally:
+        return recode
 #초기화
 pg.init()
 pg.display.init()
@@ -187,7 +194,7 @@ while running:
                 # 해당 벽돌 삭제
                 del bricks[bricks.index(brick)]
                 # 점수 증가
-                score += 1
+                score += (1 * 1 + (stage-1)/10)
         # 키보드 입력에 따른 패드 이동
         pad.Move_Keyboard(keys)
         # 키보드 입력을 받을 시, 공 발사
@@ -220,10 +227,15 @@ while running:
         ball.Draw(display)
     else:     # 만약 체력이 0보다 작거나 같은 경우
         if DB_Once == True:
-            DB_Update(nickname_input.text, score)
-            recode = DB_Load()
+            Recode_Update(nickname_input.text, score)
+            recode = Recode_Load()
             DB_Once = False
             text = [scoreboard.render(recode[each_recode] + ' : ' + str(each_recode), True, WHITE, None) for each_recode in sorted(recode.keys(), reverse= True)]
+
+            if not recode.keys()[0] == "Error":
+                if float(sorted(recode.keys(), reverse= True)[0]) <= score:
+                    mb.showinfo('Congratulations', message="You've achieved your best score!")
+
         # 중앙 좌표 설정
         x = (display.get_width()/2) - 100
         y = (display.get_height()/2) - 150
@@ -233,6 +245,7 @@ while running:
             if i >= len(text):
                 break
             display.blit(text[i], (x, y + (i*50)))
+
         bricks.clear()
     
    
